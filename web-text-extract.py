@@ -25,10 +25,18 @@ def extract_text(url, tags, meta_tags):
         # Extract text based on specified tags
         extracted_text = {}
         for tag in tags:
-            elements = soup.select(f"main {tag}, article {tag}, section {tag}")
-            text = ' '.join(element.get_text().strip() for element in elements)
-            text = ' '.join(text.split())  # Remove extra whitespace and line breaks
-            extracted_text[tag] = text
+            if tag == 'title':
+                # Extract title from meta tags if not found in HTML
+                title = soup.title.string.strip() if soup.title else ''
+                if not title:
+                    title_meta = soup.find('meta', attrs={'name': 'title'})
+                    title = title_meta['content'].strip() if title_meta else ''
+                extracted_text['title'] = title
+            else:
+                elements = soup.select(f"main {tag}, article {tag}, section {tag}")
+                text = ' '.join(element.get_text().strip() for element in elements)
+                text = ' '.join(text.split())  # Remove extra whitespace and line breaks
+                extracted_text[tag] = text
 
         # Extract specific meta tags
         for meta_tag in meta_tags:
