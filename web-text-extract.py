@@ -45,7 +45,7 @@ tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,meta
 output_format = st.selectbox("Select output format", ["CSV", "JSON"])
 
 # Button to start extraction
-if st.button("Start Extraction"):
+if st.button("Start Extraction", key="start_extraction"):
     if uploaded_file:
         # Read the file into a DataFrame
         if uploaded_file.name.endswith('.xlsx'):
@@ -69,7 +69,7 @@ if st.button("Start Extraction"):
             progress_bar.progress((i + 1) / total_urls)
 
             # Allow stopping the app
-            if st.button("Stop"):
+            if st.button("Stop", key=f"stop_{i}"):
                 st.stop()
 
         # Convert results to DataFrame
@@ -81,9 +81,9 @@ if st.button("Start Extraction"):
         # Provide download link
         if output_format == "CSV":
             results_df.to_csv('results.csv', index=False)
-            st.download_button("Download CSV", data=open('results.csv', 'rb'), file_name='results.csv')
+            st.download_button("Download CSV", data=open('results.csv', 'rb'), file_name='results.csv', key="download_csv")
         else:
             results_df.to_json('results.json', orient='records')
-            st.download_button("Download JSON", data=open('results.json', 'rb'), file_name='results.json')
+            st.download_button("Download JSON", data=open('results.json', 'rb'), file_name='results.json', key="download_json")
     else:
         st.error("Please upload a file.")
