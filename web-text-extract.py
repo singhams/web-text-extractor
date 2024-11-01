@@ -44,6 +44,9 @@ tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,meta
 # Select output format
 output_format = st.selectbox("Select output format", ["CSV", "JSON"])
 
+# Placeholder for status messages
+status_placeholder = st.empty()
+
 # Button to start extraction
 if st.button("Start Extraction", key="start_extraction"):
     if uploaded_file:
@@ -61,16 +64,22 @@ if st.button("Start Extraction", key="start_extraction"):
         progress_bar = st.progress(0)
         total_urls = len(urls)
 
+        # Stop button
+        stop_button = st.button("Stop", key="stop_button")
+
         for i, url in enumerate(urls):
+            if stop_button:
+                status_placeholder.warning("Batch processing stopped.")
+                st.stop()
+
+            status_placeholder.info(f"Processing batch {i + 1} of {total_urls}...")
             text = extract_text(url, tags_list)
             results.append({'URL': url, 'Text': text})
 
             # Update progress bar
             progress_bar.progress((i + 1) / total_urls)
 
-            # Allow stopping the app
-            if st.button("Stop", key=f"stop_{i}"):
-                st.stop()
+        status_placeholder.success("Batch processing complete.")
 
         # Convert results to DataFrame
         results_df = pd.DataFrame(results)
