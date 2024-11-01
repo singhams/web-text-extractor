@@ -22,21 +22,25 @@ def extract_text(url, tags):
         soup = BeautifulSoup(response.content, 'html.parser')
 
         # Extract text based on specified tags
-        extracted_text = []
+        extracted_text = {}
         for tag in tags:
             elements = soup.find_all(tag)
-            for element in elements:
-                extracted_text.append(element.get_text().strip())
+            text = ' '.join(element.get_text().strip() for element in elements)
+            text = ' '.join(text.split())  # Remove extra whitespace and line breaks
+            extracted_text[tag] = text
 
-        return ' '.join(extracted_text)
+        return extracted_text
     except requests.exceptions.RequestException as e:
-        return f"Error: {str(e)}"
+        return {tag: f"Error: {str(e)}" for tag in tags}
 
 # Subheader for the app functionality
 st.subheader("Process File")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an Excel or text file with URLs", type=["xlsx", "txt"])
+
+# Input for column name containing URLs
+url_column = st.text_input("Enter the column name containing URLs", "URL")
 
 # Input for HTML tags
 tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,meta,header,p")
@@ -54,45 +58,50 @@ if st.button("Start Extraction", key="start_extraction"):
         if uploaded_file.name.endswith('.xlsx'):
             df = pd.read_excel(uploaded_file)
         else:
-            df = pd.read_csv(uploaded_file, header=None, names=["URL"])
+            df = pd.read_csv(uploaded_file, header=None, names=[url_column])
 
-        urls = df['URL'].tolist()
-        tags_list = [tag.strip() for tag in tags.split(',')]
-        results = []
-
-        # Progress bar
-        progress_bar = st.progress(0)
-        total_urls = len(urls)
-
-        # Stop button
-        stop_button = st.button("Stop", key="stop_button")
-
-        for i, url in enumerate(urls):
-            if stop_button:
-                status_placeholder.warning("Batch processing stopped.")
-                st.stop()
-
-            status_placeholder.info(f"Processing batch {i + 1} of {total_urls}...")
-            text = extract_text(url, tags_list)
-            results.append({'URL': url, 'Text': text})
-
-            # Update progress bar
-            progress_bar.progress((i + 1) / total_urls)
-
-        status_placeholder.success("Batch processing complete.")
-
-        # Convert results to DataFrame
-        results_df = pd.DataFrame(results)
-
-        # Display results
-        st.write(results_df)
-
-        # Provide download link
-        if output_format == "CSV":
-            results_df.to_csv('results.csv', index=False)
-            st.download_button("Download CSV", data=open('results.csv', 'rb'), file_name='results.csv', key="download_csv")
+        if url_column not in df.columns:
+            st.error(f"Column '{url_column}' not found in the uploaded file.")
         else:
-            results_df.to_json('results.json', orient='records')
-            st.download_button("Download JSON", data=open('results.json', 'rb'), file_name='results.json', key="download_json")
+            urls = df[url_column].tolist()
+            tags_list = [tag.strip() for tag in tags.split(',')]
+            results = []
+
+            # Progress bar
+            progress_bar = st.progress(0)
+            total_urls = len(urls)
+
+            # Stop button
+            stop_button = st.button("Stop", key="stop_button")
+
+            for i, url in enumerate(urls):
+                if stop_button:
+                    status_placeholder.warning("Batch processing stopped.")
+                    st.stop()
+
+                status_placeholder.info(f"Processing batch {i + 1} of {total_urls}...")
+                extracted_text = extract_text(url, tags_list)
+                result = {'URL': url}
+                result.update(extracted_text)
+                results.append(result)
+
+                # Update progress bar
+                progress_bar.progress((i + 1) / total_urls)
+
+            status_placeholder.success("Batch processing complete.")
+
+            # Convert results to DataFrame
+            results_df = pd.DataFrame(results)
+
+            # Display results
+            st.write(results_df)
+
+            # Provide download link
+            if output_format == "CSV":
+                results_df.to_csv('results.csv', index=False)
+                st.download_button("Download CSV", data=open('results.csv', 'rb'), file_name='results.csv', key="download_csv")
+            else:
+                results_df.to_json('results.json', orient='records')
+                st.download_button("Download JSON", data=open('results.json', 'rb'), file_name='results.json', key="download_json")
     else:
         st.error("Please upload a file.")
