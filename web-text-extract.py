@@ -15,7 +15,7 @@ def display_readme():
 display_readme()
 
 # Function to extract text from a URL
-def extract_text(url, tags):
+def extract_text(url, tags, meta_tags):
     try:
         response = requests.get(url)
         response.raise_for_status()  # Raise an error for bad status codes
@@ -24,14 +24,22 @@ def extract_text(url, tags):
         # Extract text based on specified tags
         extracted_text = {}
         for tag in tags:
-            elements = soup.find_all(tag)
+            elements = soup.select(f"main {tag}, article {tag}, section {tag}")
             text = ' '.join(element.get_text().strip() for element in elements)
             text = ' '.join(text.split())  # Remove extra whitespace and line breaks
             extracted_text[tag] = text
 
+        # Extract specific meta tags
+        for meta_tag in meta_tags:
+            name, attr = meta_tag.split('=')
+            element = soup.find('meta', attrs={name: attr.strip('"')})
+            text = element['content'].strip() if element else ''
+            text = ' '.join(text.split())  # Remove extra whitespace and line breaks
+            extracted_text[meta_tag] = text
+
         return extracted_text
     except requests.exceptions.RequestException as e:
-        return {tag: f"Error: {str(e)}" for tag in tags}
+        return {tag: f"Error: {str(e)}" for tag in tags + meta_tags}
 
 # Subheader for the app functionality
 st.subheader("Process File")
@@ -43,7 +51,10 @@ uploaded_file = st.file_uploader("Upload an Excel or text file with URLs", type=
 url_column = st.text_input("Enter the column name containing URLs", "URL")
 
 # Input for HTML tags
-tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,meta,header,p")
+tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,h1,h2,h3,h4,h5,h6,p")
+
+# Input for specific meta tags
+meta_tags = st.text_input("Enter specific meta tags to extract (e.g., name='description', name='keywords')", "name='description'")
 
 # Select output format
 output_format = st.selectbox("Select output format", ["CSV", "JSON"])
@@ -65,6 +76,7 @@ if st.button("Start Extraction", key="start_extraction"):
         else:
             urls = df[url_column].tolist()
             tags_list = [tag.strip() for tag in tags.split(',')]
+            meta_tags_list = [meta_tag.strip() for meta_tag in meta_tags.split(',')]
             results = []
 
             # Progress bar
@@ -80,7 +92,7 @@ if st.button("Start Extraction", key="start_extraction"):
                     st.stop()
 
                 status_placeholder.info(f"Processing batch {i + 1} of {total_urls}...")
-                extracted_text = extract_text(url, tags_list)
+                extracted_text = extract_text(url, tags_list, meta_tags_list)
                 result = {'URL': url}
                 result.update(extracted_text)
                 results.append(result)
