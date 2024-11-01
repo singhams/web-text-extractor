@@ -54,7 +54,7 @@ url_column = st.text_input("Enter the column name containing URLs", "URL")
 tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,h1,h2,h3p")
 
 # Input for specific meta tags
-meta_tags = st.text_input("Enter specific meta tags to extract (e.g., name="description", name="keywords"))
+meta_tags = st.text_input("Enter specific meta tags to extract (e.g., name="description", name="keywords")', 'name="description"')
 
 # Select output format
 output_format = st.selectbox("Select output format", ["CSV", "JSON"])
