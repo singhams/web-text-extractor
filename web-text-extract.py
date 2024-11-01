@@ -51,10 +51,10 @@ uploaded_file = st.file_uploader("Upload an Excel or text file with URLs", type=
 url_column = st.text_input("Enter the column name containing URLs", "URL")
 
 # Input for HTML tags
-tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,h1,h2,h3,h4,h5,h6,p")
+tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,h1,h2,h3p")
 
 # Input for specific meta tags
-meta_tags = st.text_input("Enter specific meta tags to extract (e.g., name='description', name='keywords')", "name='description'")
+meta_tags = st.text_input("Enter specific meta tags to extract (e.g., name="description", name="keywords")
 
 # Select output format
 output_format = st.selectbox("Select output format", ["CSV", "JSON"])
