@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from io import BytesIO
 
 # Display the contents of the README.md file
 def display_readme():
@@ -51,13 +52,13 @@ uploaded_file = st.file_uploader("Upload an Excel or text file with URLs", type=
 url_column = st.text_input("Enter the column name containing URLs", "URL")
 
 # Input for HTML tags
-tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,h1,h2,h3,p")
+tags = st.text_input("Enter HTML tags to extract (comma-separated)", "title,h1,h2,h3,h4,h5,h6,p")
 
 # Input for specific meta tags
-meta_tags = st.text_input("Enter specific meta tags to extract (e.g., name=\"description\", name=\"keywords\")", 'name="description"')
+meta_tags = st.text_input('Enter specific meta tags to extract (e.g., name="description", name="keywords")', 'name="description"')
 
 # Select output format
-output_format = st.selectbox("Select output format", ["CSV", "JSON"])
+output_format = st.selectbox("Select output format", ["CSV", "Excel", "JSON"])
 
 # Placeholder for status messages
 status_placeholder = st.empty()
@@ -112,6 +113,11 @@ if st.button("Start Extraction", key="start_extraction"):
             if output_format == "CSV":
                 results_df.to_csv('results.csv', index=False)
                 st.download_button("Download CSV", data=open('results.csv', 'rb'), file_name='results.csv', key="download_csv")
+            elif output_format == "Excel":
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    results_df.to_excel(writer, index=False, sheet_name='Sheet1')
+                st.download_button("Download Excel", data=output.getvalue(), file_name='results.xlsx', key="download_excel")
             else:
                 results_df.to_json('results.json', orient='records')
                 st.download_button("Download JSON", data=open('results.json', 'rb'), file_name='results.json', key="download_json")
